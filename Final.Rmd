@@ -1,0 +1,442 @@
+---
+title: "STAT 301-2 Final Project"
+author: "Ashley Fang"
+date: "3/4/2021"
+output:
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_float: true
+    highlight: "tango"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+Last quarter, I did an exploratory data analysis of the audio features of over 500 songs from Spotify, with a main focus on K-pop, in order to learn more about it as a music genre instead of a commercialized form of entertainment. At the end of the exploration, I made radar charts of the audio features of 12 different music genres:
+
+```{r pressure, echo=FALSE, fig.align = 'center'}
+
+knitr::include_graphics("images/radar1.png")
+knitr::include_graphics("images/radar2.png")
+
+```
+
+I found these charts very fascinating- you can almost guess the music genre just by looking at these charts and interpreting the audio features. For example, dance is high on "energy," hip-hop is high on "speechiness," rock has high "liveness," and folk is low on everything except from "acousticness." The audio features seem to predict the genre quite well, and different genres have quite distinct characteristics. Therefore, for this modeling project, I decided to use audio and track features such as "valence," "energy," "tempo," and "popularity" to predict the genre of songs.
+
+<br>
+
+### Description of Data
+
+Using the package [spotifyr](https://github.com/charlie86/spotifyr), I retrieved the audio and track characteristics of 2233 tracks from [Spotify Web API](https://developer.spotify.com/documentation/web-api/). The 2233 tracks belong to a total of 11 music genres, all were obtained from Spotify's year-end "best of" playlists:
+
+<br>
+
+* Best of 2019: [Hip-hop](https://open.spotify.com/playlist/37i9dQZF1DX4ykqMZqUn3L?si=2DsMnFNsRv2sLFDY13Yv4Q), [Indie](https://open.spotify.com/playlist/37i9dQZF1DWTc5QDlvD7t0?si=YtH9Av3DQfaHOlGRXi8Mrw), [Gospel](https://open.spotify.com/playlist/37i9dQZF1DX5JHlV94wGBQ?si=O7R4A8N6TQ-jUUMN5jMLog), [Country](https://open.spotify.com/playlist/37i9dQZF1DX3RCeShx2suK?si=jyvlDY_7RViEljyJ-eoJMA), [Dance](https://open.spotify.com/playlist/37i9dQZF1DWYEA2z2jQnzS?si=0GqgtKB4Rae_cfMR-K_Itw), [Rock](https://open.spotify.com/playlist/37i9dQZF1DX5gBZa9tnZTY?si=PkiOmYe2TJ6ivYck3xF_pQ), [Pop](https://open.spotify.com/playlist/37i9dQZF1DXau6DEOS07fE?si=i0hqcsbLQdaWeeLKBgWqHQ), [R&B](https://open.spotify.com/playlist/37i9dQZF1DWT2DKEIZ0ILA?si=dxqtEWahThGNtCcajcww2w), [Afropop](https://open.spotify.com/playlist/37i9dQZF1DXdD040nrEzxm?si=hLGA3kd_R6Ka1XKuem_EKw), [Latin](https://open.spotify.com/playlist/2P3A4oybmznGl3rRXfH6YQ?si=Jk8igHZXQQ-FR70N5yzzZg), [Folk](https://open.spotify.com/playlist/37i9dQZF1DWYdLqwKCcDiy?si=DyGovxvzQMmfLqqM3Q-MEw).
+<br>
+
+* Best of 2020: [Hip-hop](https://open.spotify.com/playlist/37i9dQZF1DWW5pQp5JqjY4?si=UmNyn9GxRSGtLvvd6SA4ng), [Indie](https://open.spotify.com/playlist/37i9dQZF1DWWkGXMGv9j4M?si=8Jpd8bUORgWuPHuKWxyp9A), [Country](https://open.spotify.com/playlist/37i9dQZF1DWYvU2z6HruAo?si=vOUHnQyOTQmYpsjnqLeEMw), [Dance](https://open.spotify.com/playlist/37i9dQZF1DX6IfVEzIj7ws?si=eiflxUFpRxWRLW3-Dz-kKg), [Rock](https://open.spotify.com/playlist/37i9dQZF1DX2UyG74cWOyT?si=ylXRA3opRQKhZVIbxkLHfA), [Pop](https://open.spotify.com/playlist/37i9dQZF1DX5QPo288x03n?si=HxAD2aDYR9-oUGeXf085Bw), [R&B](https://open.spotify.com/playlist/37i9dQZF1DWVYxTSK0RENg?si=DY9I8Op5QMm3LKrOAK96-A), [Afropop](https://open.spotify.com/playlist/37i9dQZF1DXdD040nrEzxm?si=riSLmuQQStqs7z21ckBwSg), [Latin](https://open.spotify.com/playlist/37i9dQZF1DWT2aDOU7r4aV?si=GbeNYL-FQFOPi6oM_Fhlog), [Folk](https://open.spotify.com/playlist/37i9dQZF1DX4VkeNQew5Ex?si=JBKNr0vMTjaJo7IBTUrnWA).
+<br>
+
+* Best of the 2010s decade (not including 2020): [Hip-hop](https://open.spotify.com/playlist/37i9dQZF1DX4pjbxDJiPrn?si=vGl1jWH1RH63xJovlUQBpg), [Indie](https://open.spotify.com/playlist/37i9dQZF1DWTHM4kX49UKs?si=MttcUlAWS0KVpOz53z84Rw), [Gospel](https://open.spotify.com/playlist/37i9dQZF1DXaJDplEJVP32?si=Y54H7R4ORSaOwKm1WTD4Tw), [Country](https://open.spotify.com/playlist/37i9dQZF1DXaB64wwvEuUo?si=Awsi4O1IRC2XHRCz9FpRyA), [Dance](https://open.spotify.com/playlist/37i9dQZF1DX8D2YR1GbW3K), [Rock](https://open.spotify.com/playlist/37i9dQZF1DWViLl4FIAFJf?si=2oHqR9rISSm98WZbOJi4cg), [Pop](https://open.spotify.com/playlist/37i9dQZF1DWSs8ya2jFSgv?si=e_Yey8ZKTxKfz5t-EZvv-g), [R&B](https://open.spotify.com/playlist/37i9dQZF1DWXbttAJcbphz), [Afropop](https://open.spotify.com/playlist/37i9dQZF1DWWHMKZF8dZSb?si=kFLrSy-ETiKgXp4HSkEm-g), [Latin](https://open.spotify.com/playlist/37i9dQZF1DWZQkHAMKYFuV?si=8qmwMLBWRY-PnGZ73PcR6Q), [Folk](https://open.spotify.com/playlist/37i9dQZF1DX0dClrg1J8Br?si=3avoPX-pTDSLjk-VoCpokQ).
+<br>
+
+I pulled track data from each of the playlists above, joined the datasets together, and removed duplicate tracks based on their unique track ID. Since Spotify API doesn't offer track genre as a variable, I assigned genres to tracks based on the playlists they were from. Using `spotifyr`, I was able to obtain a data frame of 63 variables for each track, and I only selected 14 variables that are most relevant for modeling: the track name, artist name, 11 predictors, and the outcome variable `genre`. The dataset contains information for 2233 tracks, with around 200 tracks from each genre. A detailed walk-through of the data collection and cleaning process can be found in the R scripts, and descriptions of each variable can be found in the codebook "data/processed/tracks_codebook.rtf".
+<br>
+
+*Note: in the dataset, `fna` stands for folk & Americana, and `cng` stands for Christian & gospel.*
+
+<br>
+
+### Research Questions
+
+* How well does audio and track features such as "energy," "valence," and "liveness" predict the genre of a track?
+* Which features are the most important or the most frequently used when predicting track genre?
+
+My research is a predictive classification problem, as the response variable (`genre`) is categorical.
+
+<br>
+
+## Initial Exploration
+
+First, I will load required packages, set a seed, and read in the processed dataset `tracks`.
+
+```{r, message = FALSE}
+# Loading Packages
+library(tidyverse)
+library(tidymodels)
+library(RColorBrewer)
+library(cowplot)
+library(vip)
+# set seed
+set.seed(123)
+```
+
+```{r, message = FALSE}
+# Reading processed dataset
+tracks <- read_csv("data/processed/tracks.csv")
+```
+
+I will skim the dataset using `skimr::skim_without_charts()` to look for major issues such as missingness. 
+
+```{r}
+skimr::skim_without_charts(tracks)
+```
+
+<br>
+
+There are no missingness issues with the dataset. I will convert `genre` into a factor variable. Spotify records `loudness` in decibels (dB), so loudness values are negative, and louder tracks have smaller absolute values (e.g. -5dB is louder than -20dB). Therefore, I will also take the negative reciprocal of `loudness` for ease of understanding.
+
+```{r}
+tracks <- tracks %>% 
+  mutate(genre = factor(genre),
+         loudness = (-1 / loudness))
+```
+
+
+Now let's explore the outcome variable `genre` and look at the number of tracks in each `genre`:
+
+```{r}
+tracks %>% 
+  ggplot(aes(x = genre, fill = genre)) +
+  geom_bar(show.legend = FALSE) +
+  theme(axis.text.x = element_text(angle = 30, size = 12), 
+        panel.background = element_rect(fill="#F4F6F7")) +
+  scale_fill_brewer(palette = "Set3")
+```
+
+The Spotify playlists I used did not all have an equal number of tracks in them, so we end up with an uneven number of tracks in each `genre`. Therefore, it may be useful to use stratified sampling by `genre`.
+<br>
+
+Let's also take a look at how different genres rank on a few features. Here I took the mean `valence`, `liveness`, `acousticness`, and `speechiness` of each genre. Descriptions of these features can be found in the codebook. 
+
+
+```{r}
+valence <- tracks %>% 
+  group_by(genre) %>% 
+  mutate(mean = mean(valence)) %>% 
+  ggplot(aes(x = reorder(genre, mean, FUN = sum), y = mean)) +
+  geom_col(aes(fill = genre), show.legend = FALSE) +
+  coord_flip() +
+  scale_fill_brewer(palette = "Set3") +
+  labs(x = "Genre", y = "Mean Valence") +
+  theme(panel.background = element_rect(fill="#F4F6F7"),
+        axis.text.y = element_text(angle = 20, size = 9))
+
+liveness <- tracks %>% 
+  group_by(genre) %>% 
+  mutate(mean = mean(liveness)) %>% 
+  ggplot(aes(x = reorder(genre, mean, FUN = sum), y = mean)) +
+  geom_col(aes(fill = genre), show.legend = FALSE) +
+  coord_flip() +
+  scale_fill_brewer(palette = "Set3") +
+  labs(x = "Genre", y = "Mean Liveness") +
+  theme(panel.background = element_rect(fill="#F4F6F7"),
+        axis.text.y = element_text(angle = 20, size = 9))
+
+acousticness <- tracks %>% 
+  group_by(genre) %>% 
+  mutate(mean = mean(acousticness)) %>% 
+  ggplot(aes(x = reorder(genre, mean, FUN = sum), y = mean)) +
+  geom_col(aes(fill = genre), show.legend = FALSE) +
+  coord_flip() +
+  scale_fill_brewer(palette = "Set3") +
+  labs(x = "Genre", y = "Mean Acousticness") +
+  theme(panel.background = element_rect(fill="#F4F6F7"),
+        axis.text.y = element_text(angle = 20, size = 9))
+
+speechiness <- tracks %>% 
+  group_by(genre) %>% 
+  mutate(mean = mean(speechiness)) %>% 
+  ggplot(aes(x = reorder(genre, mean, FUN = sum), y = mean)) +
+  geom_col(aes(fill = genre), show.legend = FALSE) +
+  coord_flip() +
+  scale_fill_brewer(palette = "Set3") +
+  labs(x = "Genre", y = "Mean Speechiness") +
+  theme(panel.background = element_rect(fill="#F4F6F7"),
+        axis.text.y = element_text(angle = 20, size = 9))
+
+plot_grid(valence, liveness, acousticness, speechiness)
+```
+
+Dance has the highest mean `valence` and `liveness`, folk & Americana is overall the most acoustic, and hip-hop has the highest `speechiness`. From these graphs we can see that each `genre` performs quite differently on each audio feature, so it should be a good idea to use audio features as predictors for `genre`.
+
+<br>
+
+## Modeling
+
+### Splitting Data
+
+First, I will split the dataset into training and testing sets. Since the dataset is quite small, I will allocate 80% to the training set and 20% to the testing set to have more data to train the models. 
+
+```{r}
+tracks_split <- initial_split(tracks, prop = 0.8, strata = genre)
+tracks_train <- training(tracks_split)
+tracks_test <- testing(tracks_split)
+```
+
+I have verified that the dimensions of the training and testing sets are proportional and add up to 2233. In order to have a better evaluation of the model performance before applying it to the testing set, I will also use V-fold cross-validation as a resampling method. Again, since the dataset is relatively small, I will use a five-fold cross-validation with 5 repeats. 
+
+```{r}
+tracks_folds <- vfold_cv(data = tracks_train, v = 5, repeats = 5)
+```
+
+<br>
+
+### Recipe
+
+I will create a recipe, predicting `genre` with 11 audio or track features: `danceability`, `energy`, `loudness`, `speechiness`, `acousticness`, `instrumentalness`, `liveness`, `valence`, `tempo`, `key`, and `popularity`. I will also scale and center all predictor variables.
+
+```{r}
+recipe <- recipe(genre ~ danceability + energy + key + loudness + speechiness +
+                 acousticness + instrumentalness + liveness + valence +
+                 tempo + popularity, data = tracks_train) %>% 
+  step_normalize(all_predictors())
+recipe
+```
+
+<br>
+
+### Set Engines and Workflows
+
+Since my research question is a multiclass classification problem, I will be trying the following models:
+<br>
+1. Elastic net (a type of logistic regression), tuning the parameters `penalty` and `mixture`
+<br>
+2. Random forest (a tree-based model), tuning `mtry` and `min_n`
+<br>
+3. Boosted tree (a tree-based model), tuning `mtry`, `min_n`, and `learn_rate`
+<br>
+4. K-nearest neighbors (a non-parametric classification method), tuning `neighbors`.
+<br>
+
+I will set up the engine and create workflows for each of these models, based on the recipe above.
+
+```{r}
+# elastic net
+en_model <- multinom_reg(mode = "classification", penalty = tune(),
+                         mixture = tune()) %>% 
+  set_engine("glmnet")
+
+en_workflow <- workflow() %>% 
+  add_model(en_model) %>% 
+  add_recipe(recipe)
+
+# random forest
+rf_model <- rand_forest(mode = "classification", mtry = tune(),
+                        min_n = tune()) %>% 
+  set_engine("ranger", importance = "impurity")
+
+rf_workflow <- workflow() %>% 
+  add_model(rf_model) %>% 
+  add_recipe(recipe)
+
+# boosted tree
+bt_model <- boost_tree(mode = "classification", mtry = tune(),
+                       min_n = tune(), learn_rate = tune()) %>% 
+  set_engine("xgboost", importance = "impurity")
+
+bt_workflow <- workflow() %>% 
+  add_model(bt_model) %>% 
+  add_recipe(recipe)
+
+# nearest neighbors
+nn_model <- nearest_neighbor(mode = "classification", neighbors = tune()) %>% 
+  set_engine("kknn")
+
+nn_workflow <- workflow() %>% 
+  add_model(nn_model) %>% 
+  add_recipe(recipe)
+```
+
+<br>
+
+### Tuning with Regular Grids
+
+I will create regular grids with 5 levels for each of the models, tuning the corresponding parameters. The parameter values are decided based on the number of predictors and the size of the dataset.
+
+```{r}
+# elastic net
+en_grid <- grid_regular(mixture(), penalty(), levels = 5)
+
+# random forest
+rf_params <- parameters(rf_model) %>% 
+  update(mtry = mtry(range = c(1, 11)))
+rf_grid <- grid_regular(rf_params, levels = 5)
+
+# boosted tree
+bt_params <- parameters(bt_model) %>% 
+  update(mtry = mtry(range = c(1, 11)),
+         learn_rate = learn_rate(range = c(-10, 0)))
+bt_grid <- grid_regular(bt_params, levels = 5)
+
+# nearest neighbors
+nn_params <- parameters(nn_model)
+nn_grid <- grid_regular(nn_params, levels = 5)
+```
+
+<br>
+
+Then, I will tune the four models using the workflows and regular grids I just created. Since tuning the models, with the addition of cross-validation, takes a very long time, I have created separate R scripts to run and save the tuned models into RDS files. These can be found in the "rscripts" folder. 
+
+```{r, eval = FALSE}
+# elastic net
+en_tuned <- en_workflow %>% 
+  tune_grid(tracks_folds, grid = en_grid)
+
+# random forest
+rf_tuned <- rf_workflow %>% 
+  tune_grid(tracks_folds, grid = rf_grid)
+
+# boosted tree
+bt_tuned <- bt_workflow %>% 
+  tune_grid(tracks_folds, grid = bt_grid)
+
+# nearest neighbors
+nn_tuned <- nn_workflow %>% 
+  tune_grid(tracks_folds, grid = nn_grid)
+```
+
+```{r}
+en_tuned <- read_rds("rscripts/en_model.rds")
+rf_tuned <- read_rds("rscripts/rf_model.rds")
+bt_tuned <- read_rds("rscripts/bt_model.rds")
+nn_tuned <- read_rds("rscripts/nn_model.rds")
+```
+
+<br>
+
+## Measuring Performance
+
+Since this is a multiclass classification problem, I will use the area under the ROC curve, or `roc_auc` as the performance metric. 
+Let's take a look at the autoplots and the best-performing parameter values for each model:
+
+```{r}
+autoplot(en_tuned, metric = "roc_auc") +
+  labs(title = "Elastic Net")
+show_best(en_tuned, metric = "roc_auc")
+
+autoplot(rf_tuned, metric = "roc_auc") +
+  labs(title = "Random Forest")
+show_best(rf_tuned, metric = "roc_auc")
+
+autoplot(bt_tuned, metric = "roc_auc") +
+  labs(title = "Boosted Tree")
+show_best(bt_tuned, metric = "roc_auc")
+
+autoplot(nn_tuned, metric = "roc_auc") +
+  labs(title = "K-Nearest Neighbors")
+show_best(nn_tuned, metric = "roc_auc")
+```
+
+<br>
+
+The elastic net model seems to perform better when `penalty` is 1 and when `mixture` is small. The random forest model performs best when `min_n` is 21 and `mtry` is 6. The boosted tree model performs best when `mtry` is 1, `min_n` is 30, and `learn_rate` is 1. Lastly, the KNN model gives the best predictions when `neighbors` is 15. 
+<br>
+
+Overall, the **random forest model** performed the best. It's best tuning parameters give a mean AUC value of 0.905 and a very small standard error. An AUC value over 0.9 indicates that the accuracy of the model is [excellent](http://gim.unmc.edu/dxtests/roc3.htm). Nevertheless, all of the models did quite well, with the boosted tree in 2nd place (AUC = 0.898), the elastic net in 3rd place (AUC = 0.865), and the KNN coming in last (AUC = 0.814). Even the KNN has an AUC value that's over 0.8, which is still considered as good accuracy.
+
+<br>
+
+### Finalizing
+
+I will move forward with the random forest model, since it gives the largest area under the ROC curve. I will finalize the model with its best-performing parameter values.  
+
+```{r}
+rf_workflow_tuned <- rf_workflow %>% 
+  finalize_workflow(select_best(rf_tuned, metric = "roc_auc"))
+```
+
+<br>
+
+## Testing
+
+Finally, I will fit the tuned random forest model to the training data. 
+
+```{r}
+rf_results <- fit(rf_workflow_tuned, tracks_train)
+```
+
+<br>
+
+Let's apply the model to the testing data, generate class probabilities, and find out the overall AUC value for the model on the testing set.
+
+```{r}
+rf_prediction <- predict(rf_results, new_data = tracks_test, type = "prob") %>%
+  bind_cols(truth = tracks_test$genre)
+
+rf_prediction %>%
+  roc_auc(truth, starts_with(".pred_"))
+```
+
+The overall AUC value on the testing set is 0.906, which is quite close to that of the training set and still indicates excellent accuracy. 
+<br>
+
+Now I will plot ROC curves for each genre and also create a confusion matrix for my model, which will help us understand if the model gave equally accurate predictions for each genre.
+
+```{r}
+curve <- roc_curve(rf_prediction, truth = truth, starts_with(".pred_"))
+autoplot(curve)
+
+rf_prediction2 <- predict(rf_results, new_data = tracks_test) %>% 
+  bind_cols(truth = tracks_test$genre)
+conf_mat(rf_prediction2, truth = truth, estimate = .pred_class)
+```
+
+We can see that the random forest model did relatively worse on Christian & Gospel, indie, Latin, and pop. It seems to have a hard time distinguishing between indie and folk & Americana, which is not surprising at all, given that both genres have low `danceability`, `energy`, `speechiness`, and high `acousticness`. 
+<br>
+
+Last, but not least, I will look at the most important predictors that were the most frequently used in predicting `genre`:
+
+```{r}
+rf_results %>% 
+  pull_workflow_fit() %>% 
+  vip()
+```
+
+From the variable importance plot, I am surprised to find that the most important predictor is actually `popularity`, instead of an audio feature. This might be because on Spotify, some genres are more frequently streamed, or streamed by more users, than others (for example, pop literally stands for "popular music"). The audio feature `danceablity` is almost as important. 
+<br>
+
+Lastly, I will predict the genre of a few of hit songs just for fun!
+<br>
+
+The model's genre prediction for Billie Eilish's *bad guy*:
+
+```{r}
+badguy <- tracks %>% 
+  filter(track.name == "bad guy")
+predict(rf_results, new_data = badguy)
+```
+
+Seems pretty accurate! What about Kendrick Lamar's *HUMBLE.*?
+
+```{r}
+humble <- tracks %>% 
+  filter(track.name == "HUMBLE.")
+predict(rf_results, new_data = humble)
+```
+
+That seems right too! What about *Mine* by Taylor Swift?
+
+```{r}
+mine <- tracks %>% 
+  filter(track.name == "Mine")
+predict(rf_results, new_data = mine)
+```
+
+Yes, pretty sure it's a title song from her earlier country era! Our model has done well. 
+
+## Debrief
+
+In this project, I attempted to build a model that predicts the genre of songs based on the track and audio features. I was able to set up, tune, and fit four models using the training data sets, and the one that performed the best was the random forest model, which had an area under ROC curve of 0.906 on the testing set. Tree-based models may work better for multiclass classification problems because they are decision-based rather than probability-based, and they do not make normality or linearity assumptions about the variables. Overall, my models were quite accurate, which makes me think that Spotify is probably also using these audio features to label music, make personalized user recommendations, and generate playlists. 
+<br>
+
+One way to further improve my model is to look for a more accurate and distinct categorization of `genre` in the first place. For this project, the labeling of genres is solely based on the playlist from which a track is retrieved, which may be a rather arbitrary categorization. In fact, *Shape of You* by Ed Sheeran is labeled as a Latin track in my dataset. I can certainly see its Latin influence and I understand why someone would put it in a Latin playlist, but I would definitely label it as a pop song. The subjective and arbitrary labeling of `genre` might have confused the model. It may also be useful to add more tracks to the model, or add more predictors such as the track length, language of lyrics, and the age and gender of artists. 
+
+<br>
+
+
+
